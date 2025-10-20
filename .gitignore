@@ -1,0 +1,25 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Virtual environment
+venv/
+env/
+.venv/
+
+# Build / packaging
+build/
+dist/
+*.egg-info/
+
+# IDE / editor settings
+.vscode/
+.idea/
+*.swp
+
+# Logs / data / notebooks
+*.log
+data/
+outputs/
+notebooks/.ipynb_checkpoints/
