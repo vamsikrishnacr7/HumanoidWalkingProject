@@ -125,7 +125,7 @@ def get_random_image(folder="../poses/sample_images"):
 
 
 def run_on_image(path):
-    """Process image and return results with visualization."""
+    """Process image and collect all detected people."""
     img = cv2.imread(path)
     if img is None:
         raise FileNotFoundError(f"Could not load image: {path}")
@@ -136,7 +136,7 @@ def run_on_image(path):
     boxes = detect_person_bboxes(img)
     print(f"YOLO detected {len(boxes)} person(s)")
 
-    results = []
+    people_data = []  # Store all people info
     vis = img.copy()
 
     if len(boxes) == 0:
@@ -147,10 +147,24 @@ def run_on_image(path):
             return img, []
         sk25 = remap_to_body25(sk33)
         draw_skel(vis, sk25)
-        return vis, [sk25]
+        
+        # Full image becomes the only detection
+        people_data.append({
+            'skeleton': sk25,
+            'bbox_info': {
+                'bbox': (0, 0, img.shape[1], img.shape[0]), 
+                'conf': 1.0, 
+                'area': img.shape[0] * img.shape[1]
+            },
+            'person_id': 0
+        })
+        return vis, people_data
 
     for i, b in enumerate(boxes):
         x1, y1, x2, y2 = b['bbox']
+        area = (x2 - x1) * (y2 - y1)  # Add area to bbox_info
+        b['area'] = area
+
         pad = 40
         x1 = max(0, x1 - pad); y1 = max(0, y1 - pad)
         x2 = min(img.shape[1], x2 + pad); y2 = min(img.shape[0], y2 + pad)
@@ -169,11 +183,17 @@ def run_on_image(path):
         sk25[:, 1] += y1
 
         draw_skel(vis, sk25)
-        results.append(sk25)
+        
+        # Store complete person data
+        people_data.append({
+            'skeleton': sk25,
+            'bbox_info': b,
+            'person_id': i
+        })
 
-        print(f"Person {i}: pose detected, conf {b['conf']:.2f}")
+        print(f"Person {i}: pose detected, conf {b['conf']:.2f}, area {area}")
 
-    return vis, results
+    return vis, people_data
 
 
 def display_result(image, title="Pose Detection Result"):
@@ -191,11 +211,15 @@ def display_result(image, title="Pose Detection Result"):
 
 if __name__ == "__main__":
     import argparse
+    from main_character_selector import select_main_character, visualize_selection
     
-    ap = argparse.ArgumentParser(description="Multi-person pose detection")
+    ap = argparse.ArgumentParser(description="Multi-person pose detection with main character selection")
     ap.add_argument("--input", type=str, help="Path to input image (optional, random if not provided)")
     ap.add_argument("--folder", type=str, default="poses/sample_images",
                     help="Folder to pick random image from (default: poses/sample_images)")
+    ap.add_argument("--method", type=str, default="weighted",
+                    choices=['largest_bbox', 'weighted'],
+                    help="Main character selection method: largest_bbox or weighted (bbox size + confidence)")
     args = ap.parse_args()
     
     # Get image path
@@ -205,12 +229,29 @@ if __name__ == "__main__":
         print(f"No input specified, selecting random image from '{args.folder}'...")
         image_path = get_random_image(args.folder)
     
-    # Process and display
-    vis_img, skeletons = run_on_image(image_path)
+    # Process and collect all people
+    vis_img, people_data = run_on_image(image_path)
     
-    if len(skeletons) > 0:
-        print(f"\nSuccessfully extracted {len(skeletons)} skeleton(s)")
+    if len(people_data) > 0:
+        print(f"\nDetected {len(people_data)} person(s)")
+        
+        # Select main character
+        main_idx, main_skeleton, selection_info = select_main_character(people_data, method=args.method)
+        
+        print(f"\n{'='*50}")
+        print(f"MAIN CHARACTER SELECTED:")
+        print(f"  Person ID: {selection_info['main_person_id']}")
+        print(f"  Method: {selection_info['method']}")
+        print(f"  Bbox Area: {selection_info['bbox_area']}")
+        print(f"  Confidence: {selection_info['confidence']:.2f}")
+        if 'score' in selection_info:
+            print(f"  Combined Score: {selection_info['score']:.2f}")
+        print(f"{'='*50}\n")
+        
+        # Visualize selection
+        selection_vis = visualize_selection(vis_img, people_data, main_idx)
+        display_result(selection_vis, f"Main Character Selection: {Path(image_path).name}")
+        
     else:
-        print("\nNo skeletons detected")
-    
-    display_result(vis_img, f"Pose Detection: {Path(image_path).name}")
+        print("\nNo people detected")
+        display_result(vis_img, f"Pose Detection: {Path(image_path).name}")
