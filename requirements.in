@@ -1,0 +1,10 @@
+numpy
+opencv-python
+openpifpaf
+pybullet
+torch
+torchvision
+tqdm
+matplotlib
+gymnasium
+scipy
