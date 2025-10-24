@@ -246,11 +246,30 @@ if __name__ == "__main__":
         print(f"  Confidence: {selection_info['confidence']:.2f}")
         if 'score' in selection_info:
             print(f"  Combined Score: {selection_info['score']:.2f}")
+        
+        # Compute joint angles for main character
+        from module1_to_angles import compute_full_body_angles, draw_skeleton_angles
+        angles = compute_full_body_angles(main_skeleton)
+        
+        print("\nJOINT ANGLES (degrees):")
+        print("Lower Body:")
+        lower_joints = ['r_hip', 'r_knee', 'r_ankle', 'l_hip', 'l_knee', 'l_ankle']
+        for name in lower_joints:
+            print(f"  {name.upper()}: {np.degrees(angles[name]):.1f}°")
+            
+        print("\nUpper Body:")
+        upper_joints = ['spine', 'r_shoulder', 'r_elbow', 'l_shoulder', 'l_elbow']
+        for name in upper_joints:
+            print(f"  {name.upper()}: {np.degrees(angles[name]):.1f}°")
         print(f"{'='*50}\n")
         
-        # Visualize selection
+        # Save angles for later use with PyBullet
+        theta_init = angles  # will expand this with more joints later
+        
+        # Visualize selection and angles
         selection_vis = visualize_selection(vis_img, people_data, main_idx)
-        display_result(selection_vis, f"Main Character Selection: {Path(image_path).name}")
+        angle_vis = draw_skeleton_angles(selection_vis, main_skeleton, angles)
+        display_result(angle_vis, f"Main Character Selection & Joint Angles: {Path(image_path).name}")
         
     else:
         print("\nNo people detected")
