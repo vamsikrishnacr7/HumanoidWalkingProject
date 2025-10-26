@@ -20,6 +20,5 @@ dist/
 
 # Logs / data / notebooks
 *.log
-data/
 outputs/
 notebooks/.ipynb_checkpoints/
