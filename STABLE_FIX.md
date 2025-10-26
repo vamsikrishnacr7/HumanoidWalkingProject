@@ -69,19 +69,5 @@ Robot structure now:
 
 This is MUCH more stable! The robot can't fall sideways because hips are fixed.
 
-## If Still Having Issues:
 
-1. **Test with simpler hyperparameters in `quick_train.py`:**
-   - Reduce `epsilon_start` to 0.7
-   - Increase `max_torque` reduction in env
-
-2. **For faster training:**
-   - Reduce episodes to 50 for testing
-   - Agent should learn basic walking in ~20-30 episodes
-
-3. **If torso still falls:**
-   - Further increase `angularDamping` to 5.0
-   - Further reduce `max_torque` to 30.0
-
-Good luck with your submission!
 
